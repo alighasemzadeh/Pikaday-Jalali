@@ -43,7 +43,7 @@
         format: 'jYYYY-jMM-jDD',
         yearRange: [2000,2020],
         onSelect: function() {
-            var date = document.createTextNode(this.getMoment().format('Do jMMMM jYYYY') + ' ');
+            var date = document.createTextNode(this.getMoment().format('jDo jMMMM jYYYY') + ' ');
             document.getElementById('selected').appendChild(date);
         }
     });
