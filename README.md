@@ -4,7 +4,7 @@ Pikaday
 ### A refreshing JavaScript Datepicker
 
 * Lightweight (less than 5kb minified and gzipped)
-* No dependencies (but plays well with [Moment.js][moment])
+* No dependencies (but plays well with [Moment.js][moment] [Moment-Jalali][moment-jalali])
 * Modular CSS classes for easy styling
 
 [**Try Pikaday Demo →**][Pikaday]
@@ -92,6 +92,7 @@ Pikaday has many useful options:
 * `yearRange` number of years either side (e.g. `10`) or array of upper/lower range (e.g. `[1900,2015]`)
 * `showWeekNumber` show the ISO week number at the head of the row (default `false`)
 * `isRTL` reverse the calendar for right-to-left languages
+* `persianNumbers` replace english numbers to persian numbers (default `true`)
 * `i18n` language defaults for month and weekday names (see internationalization below)
 * `yearSuffix` additional text to append to the year in the title
 * `showMonthAfterYear` render the month after year in the title (default `false`)
@@ -301,9 +302,10 @@ Also [@stas][stas] has a fork [stas/Pikaday][stas Pika], but is now quite old
 
 Thanks to [@shoogledesigns][shoogledesigns] for the name.
 
-Copyright © 2014 David Bushell | BSD & MIT license
+Copyright © 2014 David Bushell & Sajjad Servatjoo | BSD & MIT license
 
   [Pikaday]:     http://sajjad-ser.github.io/Pikaday-Jalali/                              "Pikaday"
+  [moment-jalali]: https://github.com/jalaali/moment-jalaali                      "moment-jalali"
   [moment]:      http://momentjs.com/                                             "moment.js"
   [browserify]:  http://browserify.org/                                           "browserify"
   [screenshot]:  https://raw.github.com/sajjad-ser/Pikaday-Jalali/gh-pages/screenshot.png  "Screenshot"
