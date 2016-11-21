@@ -1,4 +1,629 @@
 /*!
+    JDate
+*/
+/*
+  Converts a Gregorian date to Jalaali.
+*/
+function toJalaali(gy, gm, gd) {
+    if (Object.prototype.toString.call(gy) === '[object Date]') {
+        gd = gy.getDate()
+        gm = gy.getMonth() + 1
+        gy = gy.getFullYear()
+    }
+    return d2j(g2d(gy, gm, gd))
+}
+
+/*
+  Converts a Jalaali date to Gregorian.
+*/
+function toGregorian(jy, jm, jd) {
+    return d2g(j2d(jy, jm, jd))
+}
+
+/*
+  Checks whether a Jalaali date is valid or not.
+*/
+function isValidJalaaliDate(jy, jm, jd) {
+    return jy >= -61 && jy <= 3177 &&
+        jm >= 1 && jm <= 12 &&
+        jd >= 1 && jd <= jalaaliMonthLength(jy, jm)
+}
+
+/*
+  Is this a leap year or not?
+*/
+function isLeapJalaaliYear(jy) {
+    return jalCal(jy).leap === 0
+}
+
+/*
+  Number of days in a given month in a Jalaali year.
+*/
+function jalaaliMonthLength(jy, jm) {
+    if (jm <= 6) return 31
+    if (jm <= 11) return 30
+    if (isLeapJalaaliYear(jy)) return 30
+    return 29
+}
+
+/*
+  This function determines if the Jalaali (Persian) year is
+  leap (366-day long) or is the common year (365 days), and
+  finds the day in March (Gregorian calendar) of the first
+  day of the Jalaali year (jy).
+  @param jy Jalaali calendar year (-61 to 3177)
+  @return
+    leap: number of years since the last leap year (0 to 4)
+    gy: Gregorian year of the beginning of Jalaali year
+    march: the March day of Farvardin the 1st (1st day of jy)
+  @see: http://www.astro.uni.torun.pl/~kb/Papers/EMP/PersianC-EMP.htm
+  @see: http://www.fourmilab.ch/documents/calendar/
+*/
+function jalCal(jy) {
+    // Jalaali years starting the 33-year rule.
+    var breaks = [-61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210
+        , 1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178
+    ]
+        , bl = breaks.length
+        , gy = jy + 621
+        , leapJ = -14
+        , jp = breaks[0]
+        , jm
+        , jump
+        , leap
+        , leapG
+        , march
+        , n
+        , i
+
+    if (jy < jp || jy >= breaks[bl - 1])
+        throw new Error('Invalid Jalaali year ' + jy)
+
+    // Find the limiting years for the Jalaali year jy.
+    for (i = 1; i < bl; i += 1) {
+        jm = breaks[i]
+        jump = jm - jp
+        if (jy < jm)
+            break
+        leapJ = leapJ + div(jump, 33) * 8 + div(mod(jump, 33), 4)
+        jp = jm
+    }
+    n = jy - jp
+
+    // Find the number of leap years from AD 621 to the beginning
+    // of the current Jalaali year in the Persian calendar.
+    leapJ = leapJ + div(n, 33) * 8 + div(mod(n, 33) + 3, 4)
+    if (mod(jump, 33) === 4 && jump - n === 4)
+        leapJ += 1
+
+    // And the same in the Gregorian calendar (until the year gy).
+    leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150
+
+    // Determine the Gregorian date of Farvardin the 1st.
+    march = 20 + leapJ - leapG
+
+    // Find how many years have passed since the last leap year.
+    if (jump - n < 6)
+        n = n - jump + div(jump + 4, 33) * 33
+    leap = mod(mod(n + 1, 33) - 1, 4)
+    if (leap === -1) {
+        leap = 4
+    }
+
+    return {
+        leap: leap
+        , gy: gy
+        , march: march
+    }
+}
+
+/*
+  Converts a date of the Jalaali calendar to the Julian Day number.
+  @param jy Jalaali year (1 to 3100)
+  @param jm Jalaali month (1 to 12)
+  @param jd Jalaali day (1 to 29/31)
+  @return Julian Day number
+*/
+function j2d(jy, jm, jd) {
+    var r = jalCal(jy)
+    return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - div(jm, 7) * (jm - 7) + jd - 1
+}
+
+/*
+  Converts the Julian Day number to a date in the Jalaali calendar.
+  @param jdn Julian Day number
+  @return
+    jy: Jalaali year (1 to 3100)
+    jm: Jalaali month (1 to 12)
+    jd: Jalaali day (1 to 29/31)
+*/
+function d2j(jdn) {
+    var gy = d2g(jdn).gy // Calculate Gregorian year (gy).
+        , jy = gy - 621
+        , r = jalCal(jy)
+        , jdn1f = g2d(gy, 3, r.march)
+        , jd
+        , jm
+        , k
+
+    // Find number of days that passed since 1 Farvardin.
+    k = jdn - jdn1f
+    if (k >= 0) {
+        if (k <= 185) {
+            // The first 6 months.
+            jm = 1 + div(k, 31)
+            jd = mod(k, 31) + 1
+            return {
+                jy: jy
+                , jm: jm
+                , jd: jd
+            }
+        } else {
+            // The remaining months.
+            k -= 186
+        }
+    } else {
+        // Previous Jalaali year.
+        jy -= 1
+        k += 179
+        if (r.leap === 1)
+            k += 1
+    }
+    jm = 7 + div(k, 30)
+    jd = mod(k, 30) + 1
+    return {
+        jy: jy
+        , jm: jm
+        , jd: jd
+    }
+}
+
+/*
+  Calculates the Julian Day number from Gregorian or Julian
+  calendar dates. This integer number corresponds to the noon of
+  the date (i.e. 12 hours of Universal Time).
+  The procedure was tested to be good since 1 March, -100100 (of both
+  calendars) up to a few million years into the future.
+  @param gy Calendar year (years BC numbered 0, -1, -2, ...)
+  @param gm Calendar month (1 to 12)
+  @param gd Calendar day of the month (1 to 28/29/30/31)
+  @return Julian Day number
+*/
+function g2d(gy, gm, gd) {
+    var d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4)
+        + div(153 * mod(gm + 9, 12) + 2, 5)
+        + gd - 34840408
+    d = d - div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4) + 752
+    return d
+}
+
+/*
+  Calculates Gregorian and Julian calendar dates from the Julian Day number
+  (jdn) for the period since jdn=-34839655 (i.e. the year -100100 of both
+  calendars) to some millions years ahead of the present.
+  @param jdn Julian Day number
+  @return
+    gy: Calendar year (years BC numbered 0, -1, -2, ...)
+    gm: Calendar month (1 to 12)
+    gd: Calendar day of the month M (1 to 28/29/30/31)
+*/
+function d2g(jdn) {
+    var j
+        , i
+        , gd
+        , gm
+        , gy
+    j = 4 * jdn + 139361631
+    j = j + div(div(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908
+    i = div(mod(j, 1461), 4) * 5 + 308
+    gd = div(mod(i, 153), 5) + 1
+    gm = mod(div(i, 153), 12) + 1
+    gy = div(j, 1461) - 100100 + div(8 - gm, 6)
+    return {
+        gy: gy
+        , gm: gm
+        , gd: gd
+    }
+}
+
+/*
+  Utility helper functions.
+*/
+
+function div(a, b) {
+    return ~~(a / b)
+}
+
+function mod(a, b) {
+    return a - ~~(a / b) * b
+}
+
+// Calculate Gregorian calendar date from Julian day
+function jd_to_gregorian(jd) {
+    var res = d2g(jd);
+    return [res.gy, res.gm, res.gd];
+}
+
+function gregorian_to_jd(year, month, day) {
+    return g2d(year, month, day);
+}
+
+function jd_to_persian(jd) {
+    var res = d2j(jd);
+    return [res.jy, res.jm, res.jd];
+}
+
+// Determine Julian day from Persian date
+function persian_to_jd(year, month, day) {
+    return j2d(year, month, day);
+}
+
+function persian_to_jd_fixed(year, month, day) {
+    /*
+     Fix `persian_to_jd` so we can use negative or large values for month, e.g:
+     persian_to_jd_fixed(1393, 26, 1) == persian_to_jd_fixed(1395, 2, 1)
+     persian_to_jd_fixed(1393, -2, 1) == persian_to_jd_fixed(1392, 10, 1)
+     */
+    if (month > 12 || month <= 0) {
+        var yearDiff = Math.floor((month - 1) / 12);
+        year += yearDiff;
+        month = month - yearDiff * 12;
+    }
+    return persian_to_jd(year, month, day);
+}
+
+function digits_fa2en(value) {
+    var newValue = "";
+    for (var i = 0; i < value.length; i++) {
+        var ch = value.charCodeAt(i);
+        if (ch >= 1776 && ch <= 1785) // For Persian digits.
+        {
+            var newChar = ch - 1728;
+            newValue = newValue + String.fromCharCode(newChar);
+        }
+        else if (ch >= 1632 && ch <= 1641) // For Arabic & Unix digits.
+        {
+            var newChar = ch - 1584;
+            newValue = newValue + String.fromCharCode(newChar);
+        }
+        else
+            newValue = newValue + String.fromCharCode(ch);
+    }
+    return newValue;
+}
+
+function digits_en2fa(value) {
+    if (!value) {
+        return;
+    }
+    value = value + '';
+    var englishNumbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+        persianNumbers = ["۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰"];
+
+    for (var i = 0, numbersLen = englishNumbers.length; i < numbersLen; i++) {
+        value = value.replace(new RegExp(englishNumbers[i], "g"), persianNumbers[i]);
+    }
+    return value;
+}
+
+
+function pad2(number) {
+    return number < 10 ? `0${number}` : number;
+}
+
+
+function parseDateString(string) {
+    var re = /^(شنبه|یکشنبه|دوشنبه|سه شنبه|چهارشنبه|پنجشنبه|جمعه)\s(\d\d)\s*(فروردین|اردیبهشت|خرداد|تیر|مرداد|شهریور|مهر|آبان|آذر|دی|بهمن|اسفند)\s*(\d\d\d\d)$/,
+        match = re.exec(string),
+        year,
+        month,
+        day;
+    if (!match) {
+        return;
+    }
+    year = parseInt(match[4]);
+    month = parseInt(JDate.i18n.months.indexOf(match[3])) + 1;
+    day = parseInt(match[2]);
+    var gd = jd_to_gregorian(persian_to_jd_fixed(year, month, day));
+    return new Date(gd[0], gd[1] - 1, gd[2]);
+}
+
+function parseDate(string, convertToPersian) {
+    /*
+     http://en.wikipedia.org/wiki/ISO_8601
+     http://dygraphs.com/date-formats.html
+     https://github.com/arshaw/xdate/blob/master/src/xdate.js#L414
+     https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
+     tests:
+     +parseDate('2014') == +new Date('2014')
+     +parseDate('2014-2') == +new Date('2014-02')
+     +parseDate('2014-2-3') == +new Date('2014-02-03')
+     +parseDate('2014-02-03 12:11') == +new Date('2014/02/03 12:11')
+     +parseDate('2014-02-03T12:11') == +new Date('2014/02/03 12:11')
+     parseDate('2014/02/03T12:11') == undefined
+     +parseDate('2014/02/03 12:11:10.2') == +new Date('2014/02/03 12:11:10') + 200
+     +parseDate('2014/02/03 12:11:10.02') == +new Date('2014/02/03 12:11:10') + 20
+     parseDate('2014/02/03 12:11:10Z') == undefined
+     +parseDate('2014-02-03T12:11:10Z') == +new Date('2014-02-03T12:11:10Z')
+     +parseDate('2014-02-03T12:11:10+0000') == +new Date('2014-02-03T12:11:10Z')
+     +parseDate('2014-02-03T10:41:10+0130') == +new Date('2014-02-03T12:11:10Z')
+     */
+    var re = /^(\d|\d\d|\d\d\d\d)(?:([-\/])(\d{1,2})(?:\2(\d|\d\d|\d\d\d\d))?)?(([ T])(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|([+-])(\d{2})(?::?(\d{2}))?)?)?$/;
+    var match = re.exec(string);
+    // re.exec('2012-4-5 01:23:10.1111+0130')
+    //  0                              1       2    3    4    5                      6    7     8     9     10      11       12   13    14
+    // ["2012-4-5 01:23:10.1111+0330", "2012", "-", "4", "5", " 01:23:10.1111+0130", " ", "01", "23", "10", "1111", "+0330", "+", "03", "30"]
+
+    var date;
+    var separator;
+    var timeSeparator;
+    var year;
+    var month;
+    var day;
+    var isISO;
+    var hour;
+    var minute;
+    var seconds;
+    var millis;
+    var tz;
+    var isNonLocal;
+    var tzOffset;
+
+    if (!match) {
+        return;
+    }
+
+    separator = match[2];
+    timeSeparator = match[6];
+    year = +match[1];
+    month = +match[3] || 1;
+    day = +match[4] || 1;
+    isISO = (separator !== '/') && (match[6] !== ' ');
+    hour = +match[7] || 0;
+    minute = +match[8] || 0;
+    seconds = +match[9] || 0;
+    millis = +(`0.${(match[10] || '0')}`) * 1000;
+    tz = match[11];
+    isNonLocal = isISO && (tz || !match[5]);
+    tzOffset = (match[12] === '-' ? -1 : 1) * ((+match[13] || 0) * 60 + (+match[14] || 0));
+
+    // timezone should be empty if dates are with / (2012/1/10)
+    if ((tz || timeSeparator === 'T') && !isISO) {
+        return;
+    }
+
+    // one and only-one of year/day should be 4-chars (2012/1/10 vs 10/1/2012)
+    if ((day >= 1000) === (year >= 1000)) {
+        return;
+    }
+
+    if (day >= 1000) {
+        // year and day only can be swapped if using '/' as separator
+        if (separator === '-') {
+            return;
+        }
+        day = +match[1];
+        year = day;
+    }
+
+    if (convertToPersian) {
+        const persian = jd_to_gregorian(persian_to_jd_fixed(year, month, day));
+        year = persian[0];
+        month = persian[1];
+        day = persian[2];
+    }
+
+    date = new Date(year, month - 1, day, hour, minute, seconds, millis);
+
+    if (isNonLocal) {
+        date.setUTCMinutes(date.getUTCMinutes() - date.getTimezoneOffset() + tzOffset);
+    }
+
+    return date;
+}
+
+var isDate = function (obj) {
+    return (/Date/).test(Object.prototype.toString.call(obj)) && !isNaN(obj.getTime());
+}
+
+var Data = window.Date;
+
+var proto;
+
+/**
+ * @param {Object=} a ,may have different types for different semantics: 1) string: parse a date
+ * 		2) Date object: clone a date object  3) number: value for year
+ * @param {Number=} month
+ * @param {Number=} day
+ * @param {Number=} hour
+ * @param {Number=} minute
+ * @param {Number=} second
+ * @param {Number=} millisecond
+ * @constructor
+ * @extends {Date}
+ */
+function JDate(a, month, day, hour, minute, second, millisecond) {
+    if (a === '') {
+        this._d = new Date();
+    }
+    else if (typeof a === 'string' && (parseInt(a) != a)) {
+        a = digits_fa2en(a);
+        this._d = parseDate(a, true);
+        if (!isDate(this._d)) {
+            this._d = parseDateString(a);
+            if (!isDate(this._d)) {
+                this._d = new Date(a);
+                if (!isDate(this._d)) {
+                    this._d = new Date();
+                }
+            }
+        }
+    } else if (arguments.length === 0) {
+        this._d = new Date();
+    } else if (arguments.length === 1) {
+        this._d = new Date((a instanceof JDate) ? a._d : a);
+    } else {
+        const persian = jd_to_gregorian(persian_to_jd_fixed(parseInt(a), (parseInt(month) || 0) + 1, parseInt(day) || 1));
+        this._d = new Date(persian[0], persian[1] - 1, persian[2], hour || 0, minute || 0, second || 0, millisecond || 0);
+    }
+    this._date = this._d;
+    this._cached_date_ts = null;
+    this._cached_date = [0, 0, 0];
+    this._cached_utc_date_ts = null;
+    this._cached_utc_date = [0, 0, 0];
+}
+
+proto = JDate.prototype;
+/**
+ * returns current Jalali date representation of internal date object, eg. [1394, 12, 5]
+ * Caches the converted Jalali date for improving performance
+ * @returns {Array}
+ */
+proto._persianDate = function () {
+    if (this._cached_date_ts != +this._d) {
+        this._cached_date_ts = +this._d;
+        this._cached_date = jd_to_persian(gregorian_to_jd(this._d.getFullYear(), this._d.getMonth() + 1, this._d.getDate()));
+    }
+    return this._cached_date;
+};
+/**
+ * Exactly like `_persianDate` but for UTC value of date
+ */
+proto._persianUTCDate = function () {
+    if (this._cached_utc_date_ts != +this._d) {
+        this._cached_utc_date_ts = +this._d;
+        this._cached_utc_date = jd_to_persian(gregorian_to_jd(this._d.getUTCFullYear(), this._d.getUTCMonth() + 1, this._d.getUTCDate()));
+    }
+    return this._cached_utc_date;
+};
+/**
+ *
+ * @param which , which component of date to change? 0 for year, 1 for month, 2 for day
+ * @param value , value of specified component
+ * @param {Number=} dayValue , change the day along-side specified component, used for setMonth(month[, dayValue])
+ */
+proto._setPersianDate = function (which, value, dayValue) {
+    var persian = this._persianDate();
+    persian[which] = value;
+    if (dayValue !== undefined) {
+        persian[2] = dayValue;
+    }
+    var new_date = jd_to_gregorian(persian_to_jd_fixed(persian[0], persian[1], persian[2]));
+    this._d.setFullYear(new_date[0]);
+    this._d.setMonth(new_date[1] - 1, new_date[2]);
+};
+/**
+ * Exactly like `_setPersianDate`, but operates UTC value
+ */
+proto._setUTCPersianDate = function (which, value, dayValue) {
+    var persian = this._persianUTCDate();
+    if (dayValue !== undefined) {
+        persian[2] = dayValue;
+    }
+    persian[which] = value;
+    var new_date = jd_to_gregorian(persian_to_jd_fixed(persian[0], persian[1], persian[2]));
+    this._d.setUTCFullYear(new_date[0]);
+    this._d.setUTCMonth(new_date[1] - 1, new_date[2]);
+};
+
+// All date getter methods
+proto.getDate = function () {
+    return this._persianDate()[2];
+};
+proto.getMonth = function () {
+    return this._persianDate()[1] - 1;
+};
+proto.getFullYear = function () {
+    return this._persianDate()[0];
+};
+proto.getUTCDate = function () {
+    return this._persianUTCDate()[2];
+};
+proto.getUTCMonth = function () {
+    return this._persianUTCDate()[1] - 1;
+};
+proto.getUTCFullYear = function () {
+    return this._persianUTCDate()[0];
+};
+
+// All date setter methods
+proto.setDate = function (dayValue) {
+    this._setPersianDate(2, dayValue);
+};
+proto.setFullYear = function (yearValue) {
+    this._setPersianDate(0, yearValue);
+};
+proto.setMonth = function (monthValue, dayValue) {
+    this._setPersianDate(1, monthValue + 1, dayValue);
+};
+proto.setUTCDate = function (dayValue) {
+    this._setUTCPersianDate(2, dayValue);
+};
+proto.setUTCFullYear = function (yearValue) {
+    this._setUTCPersianDate(0, yearValue);
+};
+proto.setUTCMonth = function (monthValue, dayValue) {
+    this._setUTCPersianDate(1, monthValue + 1, dayValue);
+};
+
+/**
+ * The Date.toLocaleString() method can return a string with a language sensitive representation of this date,
+ * so we change it to return date in Jalali calendar
+ */
+proto.toLocaleString = function () {
+    return `${this.getFullYear()}/${pad2(this.getMonth() + 1)}/${pad2(this.getDate())} ${pad2(this.getHours())}:${pad2(this.getMinutes())}:${pad2(this.getSeconds())}`;
+};
+
+/**
+ * The Date.now() method returns the number of milliseconds elapsed since 1 January 1970 00:00:00 UTC.
+ */
+JDate.now = function now() {
+    return Date.now();
+};
+
+/**
+ * parses a string representation of a date, and returns the number of milliseconds since January 1, 1970, 00:00:00 UTC.
+ */
+JDate.parse = function parse(strDate) {
+    return (new JDate(strDate)).getTime();
+};
+
+
+proto.toDateString = function () {
+    return JDate.i18n.weekdays[this.getDay()] + ' '
+        + pad2(this.getDate()) + ' '
+        + JDate.i18n.months[this.getMonth()] + ' ' + this.getFullYear();
+
+}
+
+JDate.i18n = {
+    months: ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'],
+    weekdays: ['یکشنبه', 'دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'],
+    weekdaysShort: ['یک', 'دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه']
+}
+/**
+ * The Date.UTC() method accepts the same parameters as the longest form of the constructor, and returns the number of
+ * milliseconds in a Date object since January 1, 1970, 00:00:00, universal time.
+ */
+JDate.UTC = function (year, month, date, hours, minutes, seconds, milliseconds) {
+    var d = jd_to_gregorian(persian_to_jd_fixed(year, month + 1, date || 1));
+    return Date.UTC(d[0], d[1] - 1, d[2], hours || 0, minutes || 0, seconds || 0, milliseconds || 0);
+};
+
+// Proxy all time-related methods to internal date object
+['getHours', 'getMilliseconds', 'getMinutes', 'getSeconds', 'getTime', 'getUTCDay',
+    'getUTCHours', 'getTimezoneOffset', 'getUTCMilliseconds', 'getUTCMinutes', 'getUTCSeconds',
+    'setHours', 'setMilliseconds', 'setMinutes', 'setSeconds', 'setTime', 'setUTCHours',
+    'setUTCMilliseconds', 'setUTCMinutes', 'setUTCSeconds', 'toISOString',
+    'toJSON', 'toString', 'toLocaleDateString', 'toLocaleTimeString', 'toTimeString',
+    'toUTCString', 'valueOf', 'getDay'].forEach((method) => {
+        proto[method] = function () {
+            return this._d[method].apply(this._d, arguments);
+        };
+    });
+
+
+/*!
  * Pikaday
  *
  * Copyright © 2014 David Bushell | BSD & MIT license | https://github.com/dbushell/Pikaday
@@ -28,6 +653,7 @@
     }
 }(this, function (moment)
 {
+    return function(Date,oDate){
     'use strict';
 
     /**
@@ -104,24 +730,28 @@
 
     isDate = function(obj)
     {
+        return ((/Object/).test(Object.prototype.toString.call(obj)) && typeof obj.getTime === "function" && !isNaN(obj.getTime())) ||
+            ((/Date/).test(Object.prototype.toString.call(obj)) && !isNaN(obj.getTime()));
+    },
+
+    isODate = function(obj){
         return (/Date/).test(Object.prototype.toString.call(obj)) && !isNaN(obj.getTime());
     },
 
     isWeekend = function(date)
     {
         var day = date.getDay();
-        return day === 0 || day === 6;
+        return day === 4 || day === 5;
     },
 
     isLeapYear = function(year)
     {
-        // solution by Matti Virkkunen: http://stackoverflow.com/a/4881951
-        return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
+            return jalCal(year).leap === 0
     },
 
     getDaysInMonth = function(year, month)
     {
-        return [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month];
+        return [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, isLeapYear(year,true) ? 30 : 29][month];
     },
 
     setToStartOfDay = function(date)
@@ -225,7 +855,9 @@
         startRange: null,
         endRange: null,
 
-        isRTL: false,
+        isRTL: true,
+
+        persianNumbers: true,
 
         // Additional text to append to the year in the calendar title
         yearSuffix: '',
@@ -248,11 +880,11 @@
 
         // internationalization
         i18n: {
-            previousMonth : 'Previous Month',
-            nextMonth     : 'Next Month',
-            months        : ['January','February','March','April','May','June','July','August','September','October','November','December'],
-            weekdays      : ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
-            weekdaysShort : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+            previousMonth: 'ماه قبل',
+            nextMonth: 'ماه بعد',
+            months: ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'],
+            weekdays: ['یکشنبه', 'دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'],
+            weekdaysShort: ['یک', 'دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه']
         },
 
         // Theme Classname
@@ -311,16 +943,16 @@
         return '<td data-day="' + opts.day + '" class="' + arr.join(' ') + '" aria-selected="' + ariaSelected + '">' +
                  '<button class="pika-button pika-day" type="button" ' +
                     'data-pika-year="' + opts.year + '" data-pika-month="' + opts.month + '" data-pika-day="' + opts.day + '">' +
-                        opts.day +
+                        (opts.persianNumbers? digits_en2fa(opts.day) : opts.day)+
                  '</button>' +
                '</td>';
     },
 
-    renderWeek = function (d, m, y) {
+    renderWeek = function (d, m, y, persianNumbers) {
         // Lifted from http://javascript.about.com/library/blweekyear.htm, lightly modified.
         var onejan = new Date(y, 0, 1),
             weekNum = Math.ceil((((new Date(y, m, d) - onejan) / 86400000) + onejan.getDay()+1)/7);
-        return '<td class="pika-week">' + weekNum + '</td>';
+        return '<td class="pika-week">' + (persianNumbers? digits_en2fa(weekNum) : weekNum) + '</td>';
     },
 
     renderRow = function(days, isRTL)
@@ -376,10 +1008,10 @@
 
         for (arr = []; i < j && i <= opts.maxYear; i++) {
             if (i >= opts.minYear) {
-                arr.push('<option value="' + i + '"' + (i === year ? ' selected="selected"': '') + '>' + (i) + '</option>');
+                arr.push('<option value="' + i + '"' + (i === year ? ' selected="selected"': '') + '>' + (opts.persianNumbers ? digits_en2fa(i) : i) + '</option>');
             }
         }
-        yearHtml = '<div class="pika-label">' + year + opts.yearSuffix + '<select class="pika-select pika-select-year" tabindex="-1">' + arr.join('') + '</select></div>';
+        yearHtml = '<div class="pika-label">' + (opts.persianNumbers? digits_en2fa(year) : year) + opts.yearSuffix + '<select class="pika-select pika-select-year" tabindex="-1">' + arr.join('') + '</select></div>';
 
         if (opts.showMonthAfterYear) {
             html += yearHtml + monthHtml;
@@ -418,7 +1050,6 @@
     {
         var self = this,
             opts = self.config(options);
-
         self._onMouseDown = function(e)
         {
             if (!self._v) {
@@ -515,6 +1146,7 @@
             if (hasMoment) {
                 date = moment(opts.field.value, opts.format, opts.formatStrict);
                 date = (date && date.isValid()) ? date.toDate() : null;
+                date = new Date(newDay);
             }
             else {
                 date = new Date(Date.parse(opts.field.value));
@@ -602,6 +1234,7 @@
             if (!opts.defaultDate) {
                 if (hasMoment && opts.field.value) {
                     opts.defaultDate = moment(opts.field.value, opts.format).toDate();
+                    opts.defaultDate = new Date(opts.defaultDate);
                 } else {
                     opts.defaultDate = new Date(Date.parse(opts.field.value));
                 }
@@ -652,6 +1285,8 @@
 
             opts.isRTL = !!opts.isRTL;
 
+            opts.persianNumbers = !!opts.persianNumbers;
+
             opts.field = (opts.field && opts.field.nodeName) ? opts.field : null;
 
             opts.theme = (typeof opts.theme) === 'string' && opts.theme ? opts.theme : null;
@@ -684,6 +1319,12 @@
             }
 
             if (isArray(opts.yearRange)) {
+                if (opts.yearRange[0] > 1500) {
+                    opts.yearRange[0] = toJalaali(opts.yearRange[0], 4, 29).jy
+                }
+                if (opts.yearRange[1] > 1500) {
+                    opts.yearRange[1] = toJalaali(opts.yearRange[1], 4, 29).jy
+                }
                 var fallback = new Date().getFullYear() - 10;
                 opts.yearRange[0] = parseInt(opts.yearRange[0], 10) || fallback;
                 opts.yearRange[1] = parseInt(opts.yearRange[1], 10) || fallback;
@@ -702,7 +1343,7 @@
          */
         toString: function(format)
         {
-            return !isDate(this._d) ? '' : hasMoment ? moment(this._d).format(format || this._o.format) : this._d.toDateString();
+            return !isDate(this._d) ? '' : hasMoment ? moment(this._d._d).format(format || this._o.format) : this._d.toDateString();
         },
 
         /**
@@ -710,7 +1351,7 @@
          */
         getMoment: function()
         {
-            return hasMoment ? moment(this._d) : null;
+            return hasMoment ? moment(this._d._d) : null;
         },
 
         /**
@@ -719,7 +1360,7 @@
         setMoment: function(date, preventOnSelect)
         {
             if (hasMoment && moment.isMoment(date)) {
-                this.setDate(date.toDate(), preventOnSelect);
+                this.setDate(new Date(date.toDate()), preventOnSelect);
             }
         },
 
@@ -828,6 +1469,7 @@
                 } else if (sign === 'subtract') {
                     newDay = moment(day).subtract(days, "days").toDate();
                 }
+                newDay = new Date(newDay);
             }
 
             this.setDate(newDay);
@@ -888,6 +1530,9 @@
          */
         setMinDate: function(value)
         {
+            if (value instanceof oDate) {
+                value = Date(value);
+            }
             if(value instanceof Date) {
                 setToStartOfDay(value);
                 this._o.minDate = value;
@@ -908,7 +1553,7 @@
          */
         setMaxDate: function(value)
         {
-            if(value instanceof Date) {
+            if (value instanceof oDate) {
                 setToStartOfDay(value);
                 this._o.maxDate = value;
                 this._o.maxYear = value.getFullYear();
@@ -981,7 +1626,7 @@
             if (typeof this._o.onDraw === 'function') {
                 this._o.onDraw(this);
             }
-            
+
             if (opts.bound) {
                 // let the screen reader user know to use arrow keys
                 opts.field.setAttribute('aria-label', 'Use the arrow keys to pick a date');
@@ -1108,6 +1753,7 @@
                         isStartRange: isStartRange,
                         isEndRange: isEndRange,
                         isInRange: isInRange,
+                        persianNumbers: opts.persianNumbers,
                         showDaysInNextAndPreviousMonths: opts.showDaysInNextAndPreviousMonths
                     };
 
@@ -1115,7 +1761,7 @@
 
                 if (++r === 7) {
                     if (opts.showWeekNumber) {
-                        row.unshift(renderWeek(i - before, month, year));
+                        row.unshift(renderWeek(i - before, month, year, opts.persianNumbers));
                     }
                     data.push(renderRow(row, opts.isRTL));
                     row = [];
@@ -1189,5 +1835,5 @@
     };
 
     return Pikaday;
-
+    }(JDate,Date)
 }));
