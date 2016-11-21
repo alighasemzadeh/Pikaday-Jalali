@@ -1343,7 +1343,11 @@ JDate.UTC = function (year, month, date, hours, minutes, seconds, milliseconds) 
          */
         toString: function(format)
         {
-            return !isDate(this._d) ? '' : hasMoment ? moment(this._d._d).format(format || this._o.format) : this._d.toDateString();
+            var value =  !isDate(this._d) ? '' : hasMoment ? moment(this._d._d).format(format || this._o.format) : this._d.toDateString();
+            if(this._o.persianNumbers){
+                value = digits_en2fa(value);
+            }
+            return value;
         },
 
         /**
