@@ -303,7 +303,7 @@ Thanks to [@shoogledesigns][shoogledesigns] for the name.
 
 Copyright © 2014 David Bushell | BSD & MIT license
 
-  [Pikaday]:     http://sajjad-ser.github.com/Pikaday-Jalali/                              "Pikaday"
+  [Pikaday]:     http://sajjad-ser.github.io/Pikaday-Jalali/                              "Pikaday"
   [moment]:      http://momentjs.com/                                             "moment.js"
   [browserify]:  http://browserify.org/                                           "browserify"
   [screenshot]:  https://raw.github.com/sajjad-ser/Pikaday-Jalali/gh-pages/screenshot.png  "Screenshot"
@@ -323,11 +323,11 @@ Copyright © 2014 David Bushell | BSD & MIT license
   [owen Pika]:   https://github.com/owenmead/Pikaday                              "Pikaday"
   [xeeali]:      https://github.com/xeeali                                        "@xeeali"
   [xeeali Pika]: https://github.com/xeeali/Pikaday                                "Pikaday"
-  [moment.js example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/moment.html    "Pikaday w/ moment.js"
-  [jQuery example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/jquery.html       "Pikaday w/ jQuery"
-  [AMD example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/amd.html             "Pikaday w/ AMD"
-  [jQuery AMD example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/jquery-amd.html "Pikaday w/ jQuery + AMD"
-  [trigger example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/trigger.html     "Pikaday using custom trigger"
-  [positions example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/positions.html "Pikaday using different position options"
-  [container example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/container.html "Pikaday using custom calendar container"
-  [theme example]: http://sajjad-ser.github.com/Pikaday-Jalali/examples/theme.html         "Pikaday using multiple themes"
+  [moment.js example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/moment.html    "Pikaday w/ moment.js"
+  [jQuery example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/jquery.html       "Pikaday w/ jQuery"
+  [AMD example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/amd.html             "Pikaday w/ AMD"
+  [jQuery AMD example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/jquery-amd.html "Pikaday w/ jQuery + AMD"
+  [trigger example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/trigger.html     "Pikaday using custom trigger"
+  [positions example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/positions.html "Pikaday using different position options"
+  [container example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/container.html "Pikaday using custom calendar container"
+  [theme example]: http://sajjad-ser.github.io/Pikaday-Jalali/examples/theme.html         "Pikaday using multiple themes"
