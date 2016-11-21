@@ -57,13 +57,15 @@ See the [moment.js example][] for a full version.
 <input type="text" id="datepicker" value="9 Oct 2014">
 
 <script src="moment.js"></script>
+<script src="moment-jalali.js"></script>
 <script src="pikaday.js"></script>
 <script>
+    moment.loadPersian();
     var picker = new Pikaday({
         field: document.getElementById('datepicker'),
-        format: 'D MMM YYYY',
+        format: 'jD jMMM jYYYY',
         onSelect: function() {
-            console.log(this.getMoment().format('Do MMMM YYYY'));
+            console.log(this.getMoment().format('Do jMMMM jYYYY'));
         }
     });
 </script>
