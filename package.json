@@ -1,14 +1,13 @@
 {
-  "name": "pikaday",
-  "version": "1.5.1",
+  "name": "pikaday-jalali",
+  "version": "1.0.0",
   "description": "A refreshing JavaScript Datepicker — lightweight, no dependencies, modular CSS",
   "keywords": [
     "datepicker",
     "calendar",
     "date"
   ],
-  "homepage": "http://dbushell.github.io/Pikaday/",
-  "bugs": "https://github.com/dbushell/Pikaday/issues",
+  "homepage": "https://github.com/alighasemzadeh/Pikaday-Jalali",
   "licenses": [
     {
       "type": "BSD",
